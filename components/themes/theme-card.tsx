@@ -13,15 +13,22 @@ interface ThemeCardProps {
   onVote: (themeId: string, remove?: boolean) => void;
   hasVoted: boolean;
   allowVoting?: boolean;
+  votes: number;
 }
 
-export function ThemeCard({ theme, onVote, hasVoted, allowVoting = true }: ThemeCardProps) {
+export function ThemeCard({
+  theme,
+  onVote,
+  hasVoted,
+  allowVoting = true,
+  votes,
+}: ThemeCardProps) {
   const [isVoting, setIsVoting] = useState(false);
   const translations = useLanguageStore((state) => state.translations);
 
   const handleVote = async () => {
     if (!allowVoting) return;
-    
+
     setIsVoting(true);
     try {
       await onVote(theme.id ?? "", hasVoted);
@@ -36,7 +43,7 @@ export function ThemeCard({ theme, onVote, hasVoted, allowVoting = true }: Theme
         <h3 className="text-xl font-semibold">{theme.title}</h3>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">
-            {theme.votes} {translations.themeCard.votes}
+            {votes || theme.votes} {translations.themeCard.votes}
           </span>
           <Button
             variant={hasVoted ? "secondary" : "default"}
@@ -46,13 +53,15 @@ export function ThemeCard({ theme, onVote, hasVoted, allowVoting = true }: Theme
             className="gap-2"
           >
             <ThumbsUp className={`w-4 h-4 ${hasVoted ? "fill-current" : ""}`} />
-            {hasVoted ? translations.themeCard.voted : translations.themeCard.vote}
+            {hasVoted
+              ? translations.themeCard.voted
+              : translations.themeCard.vote}
           </Button>
         </div>
       </div>
-      
+
       <p className="text-muted-foreground mb-4">{theme.description}</p>
-      
+
       <div className="flex flex-wrap gap-2">
         {theme.tags?.map((tag) => (
           <Badge key={tag} variant="secondary">
@@ -60,7 +69,7 @@ export function ThemeCard({ theme, onVote, hasVoted, allowVoting = true }: Theme
           </Badge>
         ))}
       </div>
-      
+
       <div className="mt-4 text-sm text-muted-foreground">
         {translations.themeCard.proposedBy} {theme.author}
       </div>

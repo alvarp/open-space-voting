@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { Theme } from "@/lib/types";
 import { useLanguageStore } from "@/lib/store/language-store";
+import useWebSocket from "react-use-websocket";
 
 export default function VotePage() {
   const router = useRouter();
@@ -21,6 +22,15 @@ export default function VotePage() {
   const translations = useLanguageStore((state) => state.translations);
   const event = useEventStore((state) => state.currentEvent);
   const authenticated = useAuthStore((state) => state.isAuthenticated);
+  const { lastJsonMessage } = useWebSocket<{ votes: Record<string, number> }>(
+    `wss://${process.env.NEXT_PUBLIC_WORKER_URL}/api/votes`,
+    {
+      onOpen: () => {
+        console.log("WebSocket connection opened");
+      },
+    }
+  );
+  const votes = lastJsonMessage?.votes;
 
   useEffect(() => {
     if (!authenticated) {
@@ -54,11 +64,15 @@ export default function VotePage() {
     }
 
     try {
-      const updatedTheme = await voteTheme(themeId, session?.user?.name ?? "");
-      
+      const updatedTheme = await voteTheme(
+        event.id,
+        themeId,
+        session?.user?.name ?? ""
+      );
+
       if (updatedTheme) {
-        setThemes(prevThemes => 
-          prevThemes.map(theme => 
+        setThemes((prevThemes) =>
+          prevThemes.map((theme) =>
             theme.id === themeId ? updatedTheme : theme
           )
         );
@@ -71,7 +85,9 @@ export default function VotePage() {
   return (
     <main className="min-h-screen py-12 px-4">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8">{translations.votePage.title}</h1>
+        <h1 className="text-4xl font-bold mb-8">
+          {translations.votePage.title}
+        </h1>
 
         {isLoading ? (
           <div className="flex justify-center items-center min-h-[200px]">
@@ -95,6 +111,7 @@ export default function VotePage() {
                   key={theme.id}
                   theme={theme}
                   onVote={handleVote}
+                  votes={votes?.[theme?.id ?? ""] ?? 0}
                   hasVoted={theme.votedBy.includes(session?.user?.name ?? "")}
                   allowVoting={event?.allowVoting}
                 />

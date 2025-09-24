@@ -2,10 +2,9 @@
 
 import { connectDB } from "@/lib/mongoose";
 import Theme, { ITheme } from "@/models/Theme";
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 import { Theme as OpenSpaceTheme } from "@/lib/types";
 import Event from "@/models/Event";
-
 
 export const getThemesByEventId = async (eventId: string) => {
   await connectDB();
@@ -15,7 +14,9 @@ export const getThemesByEventId = async (eventId: string) => {
   }
 
   try {
-    const themes = await Theme.find({ event: new mongoose.Types.ObjectId(eventId) });
+    const themes = await Theme.find({
+      event: new mongoose.Types.ObjectId(eventId),
+    });
     return themes;
   } catch (error) {
     console.error("Error buscando temas:", error);
@@ -37,10 +38,10 @@ export const getThemesByEventCode = async (eventCode: string) => {
     const changeStream = Theme.watch();
 
     changeStream.on("change", (change) => {
-    console.log(change);
-  });
+      console.log(change);
+    });
     // Aplanamos los objetos de Mongoose
-    return themes.map(theme => ({
+    return themes.map((theme) => ({
       id: theme._id.toString(),
       title: theme.title,
       description: theme.description,
@@ -49,9 +50,8 @@ export const getThemesByEventCode = async (eventCode: string) => {
       schedule: theme.schedule,
       votes: theme.votes,
       votedBy: theme.votedBy,
-      event: theme.event.toString()
+      event: theme.event.toString(),
     }));
-
   } catch (error) {
     console.error("Error buscando temas:", error);
     return [];
@@ -64,8 +64,10 @@ export const getThemeById = async (themeId: string) => {
   return theme;
 };
 
-
-type ThemeInput = Pick<ITheme, 'title' | 'description' | 'author' | 'tags' | 'votes' | 'votedBy' | 'event'>;
+type ThemeInput = Pick<
+  ITheme,
+  "title" | "description" | "author" | "tags" | "votes" | "votedBy" | "event"
+>;
 
 export async function createTheme(theme: OpenSpaceTheme) {
   await connectDB();
@@ -77,21 +79,23 @@ export async function createTheme(theme: OpenSpaceTheme) {
       tags: theme.tags,
       votes: theme.votes,
       votedBy: theme.votedBy,
-      event: new mongoose.Types.ObjectId(theme.event)
+      event: new mongoose.Types.ObjectId(theme.event),
     };
 
     await Theme.create(themeData);
     console.log("Theme created with event:", themeData.event);
     return true;
   } catch (error) {
-    console.error('Error creating theme:', error);
+    console.error("Error creating theme:", error);
     throw error;
   }
 }
 
 export const updateTheme = async (theme: ITheme) => {
   await connectDB();
-  const updatedTheme = await Theme.findByIdAndUpdate(theme._id, theme, { new: true });
+  const updatedTheme = await Theme.findByIdAndUpdate(theme._id, theme, {
+    new: true,
+  });
   return updatedTheme;
 };
 
@@ -114,23 +118,35 @@ export const getVotesByThemeId = async (themeId: string) => {
   return votes;
 };
 
-
-export const voteTheme = async (themeId: string, username: string) => {
+export const voteTheme = async (
+  eventId: string,
+  themeId: string,
+  username: string
+) => {
   await connectDB();
   const theme = await Theme.findById(themeId);
-  
+
   if (!theme) return false;
 
-  if (theme.votedBy.includes(username)){
-    theme.votedBy = theme.votedBy.filter((votedBy: string) => votedBy !== username);
+  let action = "POST";
+  if (theme.votedBy.includes(username)) {
+    theme.votedBy = theme.votedBy.filter(
+      (votedBy: string) => votedBy !== username
+    );
     theme.votes -= 1;
+    action = "DELETE";
   } else {
     theme.votedBy.push(username);
     theme.votes += 1;
   }
-  
-  const updatedTheme = await Theme.findByIdAndUpdate(theme._id, theme, { new: true });
-  
+  await fetch(
+    `https://${process.env.NEXT_PUBLIC_WORKER_URL}/api/votes/${eventId}?topicId=${themeId}`,
+    { method: action }
+  );
+  const updatedTheme = await Theme.findByIdAndUpdate(theme._id, theme, {
+    new: true,
+  });
+
   // Aplanamos el objeto antes de retornarlo
   return {
     id: updatedTheme?._id.toString(),
@@ -141,7 +157,6 @@ export const voteTheme = async (themeId: string, username: string) => {
     schedule: updatedTheme?.schedule,
     votes: updatedTheme?.votes,
     votedBy: updatedTheme?.votedBy,
-    event: updatedTheme?.event.toString()
+    event: updatedTheme?.event.toString(),
   };
 };
-
