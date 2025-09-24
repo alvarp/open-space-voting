@@ -6,10 +6,13 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { getTranslations } from "@/lib/i18n/request";
 
+export const runtime = "edge";
 
-export default async function SessionPage(props: Readonly<{
-  params: Promise<{ id: string }>
-}>) {
+export default async function SessionPage(
+  props: Readonly<{
+    params: Promise<{ id: string }>;
+  }>
+) {
   const params = await props.params;
   const currentTheme: Theme | null = await getThemeById(params.id);
   const translations = await getTranslations();
@@ -45,17 +48,19 @@ export default async function SessionPage(props: Readonly<{
           </Button>
         </Link>
       </div>
-      <SessionPageClient initialSession={{
-        id: currentTheme.id ?? '',
-        themeId: currentTheme.id ?? '',
-        participants: currentTheme.votedBy,
-        notes: '',
-        title: currentTheme.title,
-        votes: currentTheme.votes,
-        description: currentTheme.description ?? '',
-        tags: currentTheme.tags ?? [],
-        createdBy: currentTheme.author
-      }} />
+      <SessionPageClient
+        initialSession={{
+          id: currentTheme.id ?? "",
+          themeId: currentTheme.id ?? "",
+          participants: currentTheme.votedBy,
+          notes: "",
+          title: currentTheme.title,
+          votes: currentTheme.votes,
+          description: currentTheme.description ?? "",
+          tags: currentTheme.tags ?? [],
+          createdBy: currentTheme.author,
+        }}
+      />
     </div>
   );
 }
