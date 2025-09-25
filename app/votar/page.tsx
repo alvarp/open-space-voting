@@ -22,14 +22,21 @@ export default function VotePage() {
   const translations = useLanguageStore((state) => state.translations);
   const event = useEventStore((state) => state.currentEvent);
   const authenticated = useAuthStore((state) => state.isAuthenticated);
-  const { lastJsonMessage } = useWebSocket<{ votes: Record<string, number> }>(
-    `wss://${process.env.NEXT_PUBLIC_WORKER_URL}/api/votes`,
-    {
-      onOpen: () => {
-        console.log("WebSocket connection opened");
-      },
-    }
-  );
+
+  const { lastJsonMessage } = useWebSocket<{
+    votes: Record<string, number>;
+  }>(`wss://${process.env.NEXT_PUBLIC_WORKER_URL}/api/votes/${event?.id}`, {
+    onOpen: () => {
+      console.log("WebSocket connection opened");
+    },
+    onClose: () => {
+      console.log("WebSocket connection closed");
+    },
+    onError: (error) => {
+      console.log("WebSocket connection error", error);
+    },
+  });
+
   const votes = lastJsonMessage?.votes;
 
   useEffect(() => {
